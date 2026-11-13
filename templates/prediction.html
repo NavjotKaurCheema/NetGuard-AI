@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <div>
+    <h1><i class="fa fa-shield-halved"></i> Realtime NIDS</h1>
+    <p>Live inference &amp; geolocation</p>
+  </div>
+  <div class="user-bar">
+    <span>Welcome, <strong>{{ username }}</strong>!</span>
+    <a href="{{ url_for('logout') }}" class="btn-sm">Logout</a>
+    <a href="{{ url_for('analysis') }}" class="btn-sm btn-outline">Analysis →</a>
+  </div>
+</div>
+
+<div class="pred-layout">
+  <div class="map-panel">
+    <h3><i class="fa fa-map"></i> IP Geolocation Map</h3>
+    <div id="map"></div>
+  </div>
+
+  <div class="controls-panel">
+    <h3>System Controls <small>Tune &amp; replay</small></h3>
+
+    <label>Replay Speed: <strong id="speed-val">1</strong>x</label>
+    <input type="range" id="speed" min="0" max="1" step="0.05" value="0.1" class="slider"/>
+    <button class="btn-primary full-w mt" id="replay-btn" onclick="startReplay()">
+      <i class="fa fa-play"></i> Start Replay
+    </button>
+
+    <label class="mt">Alpha (Supervised): <strong id="alpha-val">0.5</strong></label>
+    <input type="range" id="alpha" min="0" max="1" step="0.05" value="0.5" class="slider"/>
+
+    <label class="mt">Beta (Unsupervised): <strong id="beta-val">0.4</strong></label>
+    <input type="range" id="beta" min="0" max="1" step="0.05" value="0.4" class="slider"/>
+
+    <label class="mt">Attack Threshold: <strong id="thresh-val">0.25</strong></label>
+    <input type="range" id="thresh" min="0" max="1" step="0.01" value="0.25" class="slider"/>
+
+    <button class="btn-outline full-w mt" onclick="applyParams()">Apply Parameters</button>
+
+    <div id="status-badge" class="badge-connected mt" style="display:none">
+      <i class="fa fa-circle" style="color:#22c55e"></i> Connected to server.
+    </div>
+    <div id="attack-banner" class="attack-banner" style="display:none"></div>
+  </div>
+</div>
+
+<!-- FEED + CHART -->
+<div class="feed-layout">
+  <div class="feed-panel">
+    <h3><i class="fa fa-terminal"></i> Live Alert Feed</h3>
+    <div id="feed"></div>
+  </div>
+  <div class="chart-panel">
+    <h3><i class="fa fa-chart-bar"></i> Attacks per Second (Last 60s)</h3>
+    <canvas id="apsChart" height="120"></canvas>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-box"><span id="stat-flows">0</span><p>Flows</p></div>
+  <div class="stat-box"><span id="stat-attacks">0</span><p>Attacks</p></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+// ─── MAP ─────────────────────────────────────────────────────
+const map = L.map('map').setView([20, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+function addMarker(lat, lon, src, score, label) {
+  if (!lat || !lon) return;
+  const color = label === 'Attack' ? '#ef4444' : '#22c55e';
+  const circle = L.circleMarker([lat, lon], {
+    radius: 7, fillColor: color, color: '#fff',
+    weight: 1, opacity: 1, fillOpacity: 0.9
+  }).bindPopup(
+    `<b>${src}</b><br>Score: ${score}<br>${label === 'Attack' ? '⚠ Attack' : '✅ Benign'}`
+  ).addTo(map);
+  setTimeout(() => { try { map.removeLayer(circle); } catch(e){} }, 15000);
+}
+
+// ─── CHART ───────────────────────────────────────────────────
+const apsData = {
+  labels: [],
+  datasets: [{
+    label: 'Attacks/s', data: [],
+    borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.15)',
+    fill: true, tension: 0.4
+  }]
+};
+const apsChart = new Chart(document.getElementById('apsChart'), {
+  type: 'line', data: apsData,
+  options: { animation: false, scales: { y: { beginAtZero: true }, x: { display: false } } }
+});
+let apsBuffer = 0;
+setInterval(() => {
+  apsData.labels.push('');
+  apsData.datasets[0].data.push(apsBuffer);
+  if (apsData.labels.length > 60) { apsData.labels.shift(); apsData.datasets[0].data.shift(); }
+  apsChart.update();
+  apsBuffer = 0;
+}, 1000);
+
+// ─── SOCKET ──────────────────────────────────────────────────
+const socket = io();
+let flows = 0, attacks = 0;
+
+socket.on('connect', () => {
+  document.getElementById('status-badge').style.display = 'flex';
+});
+
+socket.on('flow_result', d => {
+  flows++;
+  document.getElementById('stat-flows').textContent = flows;
+
+  const feed  = document.getElementById('feed');
+  const line  = document.createElement('div');
+  const isAtk = d.label === 'Attack';
+
+  if (isAtk) {
+    attacks++;
+    apsBuffer++;
+    document.getElementById('stat-attacks').textContent = attacks;
+    const banner = document.getElementById('attack-banner');
+    banner.innerHTML = `⚠ ATTACK DETECTED: [${d.src_ip} → ${d.dst_ip}] Score: ${d.score}`;
+    banner.style.display = 'block';
+    setTimeout(() => banner.style.display = 'none', 3000);
+  }
+
+  // ── Build feed line ────────────────────────────────────────
+  line.className = isAtk ? 'feed-line attack' : 'feed-line';
+
+  let feedHTML = isAtk
+    ? `<i class="fa fa-triangle-exclamation"></i> ATTACK DETECTED: [${d.src_ip} → ${d.dst_ip}] Score: <b>${d.score}</b>`
+    : `[${d.src_ip} → ${d.dst_ip}] Score: ${d.score}`;
+
+  // ── SHAP explanation (shown only for attacks) ──────────────
+  // d.shap is an array like:
+  // [{"feature": "Flow Duration", "value": 0.341}, ...]
+  // Positive value = pushed toward Attack
+  // Negative value = pushed toward Benign
+  if (isAtk && d.shap && d.shap.length > 0) {
+    const shapParts = d.shap.map(s => {
+      const sign  = s.value >= 0 ? '+' : '';
+      const color = s.value >= 0 ? '#f87171' : '#4ade80';  // red=attack, green=benign push
+      return `<span style="color:${color};font-size:11px">${s.feature}: ${sign}${s.value.toFixed(3)}</span>`;
+    });
+    feedHTML += `<br><small style="color:#94a3b8">🔍 SHAP: ${shapParts.join(' &nbsp;|&nbsp; ')}</small>`;
+  }
+
+  line.innerHTML = feedHTML;
+  feed.prepend(line);
+  if (feed.children.length > 80) feed.removeChild(feed.lastChild);
+
+  // ── Map marker ─────────────────────────────────────────────
+  if (d.geo && d.geo.lat) addMarker(d.geo.lat, d.geo.lon, d.src_ip, d.score, d.label);
+});
+
+// ─── SLIDERS ─────────────────────────────────────────────────
+['speed', 'alpha', 'beta', 'thresh'].forEach(id => {
+  const el   = document.getElementById(id);
+  const disp = document.getElementById(id + '-val');
+  el.addEventListener('input', () => disp.textContent = el.value);
+});
+
+// ─── APPLY PARAMS ────────────────────────────────────────────
+function applyParams() {
+  fetch('/set_params', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      alpha:  parseFloat(document.getElementById('alpha').value),
+      beta:   parseFloat(document.getElementById('beta').value),
+      thresh: parseFloat(document.getElementById('thresh').value)
+    })
+  }).then(r => r.json()).then(d => console.log('[PARAMS] Applied:', d));
+}
+
+// ─── REPLAY TRIGGER ──────────────────────────────────────────
+function startReplay() {
+  const speed = document.getElementById('speed').value;
+  alert(
+    `Open a new terminal and run:\n\n` +
+    `python generator.py --csv data/CICIDS2017_subset.csv --speed ${speed}\n\n` +
+    `Then come back here to watch live.`
+  );
+}
+</script>
+{% endblock %}

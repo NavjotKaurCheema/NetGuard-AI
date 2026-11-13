@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.page-hero {
+  background: linear-gradient(135deg,#0f0f1a 0%,#1a0a40 50%,#0a1628 100%);
+  padding: 3rem 2rem 2rem; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.page-hero h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight:800; margin-bottom:0.6rem; }
+.page-hero p  { color:var(--muted); max-width:700px; margin:0 auto; line-height:1.7; font-size:.95rem; }
+.page-body    { max-width:1200px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+
+.ds-section        { margin-bottom:2.8rem; }
+.ds-section-title  {
+  font-size:1.25rem; font-weight:700; color:var(--accent2);
+  border-left:4px solid var(--accent); padding-left:.8rem;
+  margin-bottom:1.2rem; display:flex; align-items:center; gap:.6rem;
+}
+
+/* Model cards */
+.model-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; }
+.model-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1.1rem 1.2rem;
+  border-top:3px solid var(--accent);
+}
+.model-card.winner { border-top-color:#22c55e; }
+.model-card.dl     { border-top-color:#06b6d4; }
+.model-card h4     { font-size:.95rem; font-weight:700; margin-bottom:.4rem; display:flex; align-items:center; gap:.5rem; }
+.model-card p      { font-size:.8rem; color:var(--muted); line-height:1.6; }
+.model-tag { font-size:.68rem; padding:2px 7px; border-radius:10px; font-weight:700; }
+.tag-ml   { background:#7c3aed33; color:#a78bfa; }
+.tag-dl   { background:#06b6d433; color:#06b6d4; }
+.tag-win  { background:#22c55e33; color:#4ade80; }
+.tag-unsup{ background:#f59e0b33; color:#fbbf24; }
+
+/* Results table */
+.res-table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border); }
+.res-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.res-table th {
+  background:var(--accent); color:#fff;
+  padding:.65rem .9rem; text-align:center;
+  font-weight:600; white-space:nowrap;
+}
+.res-table th:first-child { text-align:left; }
+.res-table td { padding:.55rem .9rem; border-bottom:1px solid var(--border); text-align:center; }
+.res-table td:first-child { text-align:left; font-weight:600; }
+.res-table tr:nth-child(even) td { background:var(--bg3); }
+.res-table tr.winner-row td { background:#22c55e15; }
+.res-table tr:hover td { background:#2d2d4e55; }
+.res-table .best { color:#4ade80; font-weight:700; }
+.res-table .good { color:#06b6d4; }
+.res-table .warn { color:#fbbf24; }
+.res-table .bad  { color:#f87171; }
+.rank-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%;
+  font-size:.7rem; font-weight:800; margin-right:.3rem;
+}
+.rank-1 { background:#ffd700; color:#000; }
+.rank-2 { background:#c0c0c0; color:#000; }
+.rank-3 { background:#cd7f32; color:#fff; }
+
+/* Criteria cards */
+.criteria-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; }
+.criteria-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1rem 1.1rem;
+}
+.criteria-card .cw   { font-size:2rem; font-weight:900; color:var(--accent2); }
+.criteria-card h4    { font-size:.85rem; font-weight:700; margin:.2rem 0 .4rem; }
+.criteria-card p     { font-size:.77rem; color:var(--muted); line-height:1.5; }
+
+/* Prose */
+.prose-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1.2rem 1.5rem;
+  line-height:1.8; font-size:.88rem; color:var(--text);
+  margin-bottom:1.2rem;
+}
+.hl-box { border-radius:var(--radius); padding:1rem 1.3rem; font-size:.85rem; line-height:1.7; margin-bottom:1rem; border-left:4px solid; }
+.hl-ok   { background:#22c55e22; border-color:#4ade80; }
+.hl-info { background:#0e7cae22; border-color:#06b6d4; }
+
+/* Charts */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-top:1rem; }
+@media(max-width:750px){ .chart-row{grid-template-columns:1fr;} }
+.chart-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1rem 1.2rem;
+}
+.chart-box h4 { font-size:.9rem; font-weight:600; margin-bottom:.8rem; }
+
+/* Mechanism section */
+.mech-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+@media(max-width:750px){ .mech-grid{grid-template-columns:1fr;} }
+.mech-box {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1.3rem 1.4rem;
+}
+.mech-box h4 { font-size:1rem; font-weight:700; margin-bottom:.8rem; display:flex; align-items:center; gap:.5rem; }
+.mech-step   { display:flex; gap:.7rem; margin-bottom:.7rem; }
+.mech-dot    { width:8px; height:8px; border-radius:50%; background:var(--accent); margin-top:.35rem; flex-shrink:0; }
+.mech-text   { font-size:.82rem; color:var(--text); line-height:1.6; }
+.mech-text strong { color:var(--accent2); }
+
+/* Flowchart SVG container */
+.flowchart-wrap {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:1.5rem;
+  overflow-x:auto; text-align:center;
+}
+.flowchart-wrap svg { max-width:100%; height:auto; }
+
+/* Formula box */
+.formula {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:8px; padding:.8rem 1.2rem;
+  font-family:monospace; font-size:.85rem; color:var(--accent2);
+  margin:.6rem 0; text-align:center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <h1><i class="fa fa-flask-vial" style="color:var(--accent2)"></i> Model Evaluation</h1>
+  <p>Complete evaluation of 13 machine learning and deep learning models tested on CIC-IDS-2017 using 30 research-selected features. Includes model descriptions, comparative results, selection criteria, and deep-dive into the winning architecture.</p>
+</div>
+
+<div class="page-body">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 1. MODELS TESTED                                           -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-layer-group"></i> Models Tested</div>
+  <div class="prose-box">
+    <strong>Training Data:</strong> 2,017,889 flows (80% stratified split) &nbsp;|&nbsp;
+    <strong>Test Data:</strong> 504,473 flows (20% held-out, never seen during training) &nbsp;|&nbsp;
+    <strong>Features:</strong> 30 research-selected features (RF Gini + Mutual Information) &nbsp;|&nbsp;
+    <strong>Preprocessing:</strong> Deduplication → Inf removal → Median imputation → log1p skewness correction → StandardScaler
+  </div>
+
+  <div class="model-grid">
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> Decision Tree</h4>
+      <p>Single tree that recursively splits the feature space using Gini impurity. Fast and interpretable. Prone to overfitting without depth limits. Used as a strong baseline — Decision Trees historically achieve high accuracy on CIC-IDS-2017 (Ramesh IJIRT 2024: 99.99%).</p>
+    </div>
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> Logistic Regression</h4>
+      <p>Linear model estimating probability using the logistic function. Assumes linear separability — inappropriate for complex network traffic patterns. Included as a weak baseline to demonstrate the need for non-linear models.</p>
+    </div>
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> Random Forest</h4>
+      <p>Ensemble of 200 decision trees trained on bootstrap samples with random feature subsets. Majority vote determines final class. Robust to overfitting, handles imbalance via class_weight='balanced'. Standard IDS benchmark model.</p>
+    </div>
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> Extra Trees</h4>
+      <p>Like Random Forest but splits are chosen completely at random (no best-split search). Faster training than RF, sometimes better generalisation due to increased randomness reducing variance.</p>
+    </div>
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> Gradient Boosting</h4>
+      <p>Sequential ensemble — each tree corrects the errors of the previous. Highest precision of all models (0.9966) but extremely slow (5,603s). Impractical for large-scale deployment despite excellent accuracy.</p>
+    </div>
+    <div class="model-card winner">
+      <h4><span class="model-tag tag-win">WINNER</span> XGBoost</h4>
+      <p>Optimised gradient boosting with regularisation, parallel tree construction, and built-in handling for class imbalance (scale_pos_weight=4). 300 trees, max_depth=6. Achieves perfect recall (0.9998) in just 24 seconds — the ideal balance of accuracy and speed.</p>
+    </div>
+    <div class="model-card">
+      <h4><span class="model-tag tag-ml">ML</span> LightGBM</h4>
+      <p>Leaf-wise gradient boosting with histogram-based splits. Fastest tree model (14s training). Matches XGBoost on F1 and recall but slightly slower inference. Excellent for production deployment.</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> MLP (GPU)</h4>
+      <p>Multi-Layer Perceptron: 3 hidden layers (256→128→64), BatchNorm, ReLU, Dropout. Trained on RTX 3050 6GB. Architecture from Sakib & Tabassum (2025) who reported 99.97% accuracy on CICIDS2017 binary classification.</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> 1D-CNN (GPU)</h4>
+      <p>Convolutional Neural Network treating 30 features as a 1D sequence. Extracts local patterns via learnable filters. Two Conv1d layers with BatchNorm, followed by dense classifier.</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> LSTM (GPU)</h4>
+      <p>Long Short-Term Memory network — each feature treated as a timestep. 2-layer LSTM with hidden_size=64. Captures sequential dependencies in the feature vector. Slowest model (4,276s) due to sequential computation.</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> GRU (GPU)</h4>
+      <p>Gated Recurrent Unit — lighter than LSTM with fewer parameters. Uses update and reset gates instead of LSTM's three-gate system. Similar accuracy to LSTM at lower training time.</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> BiLSTM (GPU)</h4>
+      <p>Bidirectional LSTM — processes the feature sequence both forward and backward, capturing context from both directions. 64 hidden units per direction (128 total). Best DL model for DoS detection per Sakib & Tabassum (2025).</p>
+    </div>
+    <div class="model-card dl">
+      <h4><span class="model-tag tag-dl">DL</span> CNN+BiLSTM (GPU)</h4>
+      <p>Hybrid: CNN extracts local feature patterns, BiLSTM captures sequential dependencies. Best DL model for Web Attack detection per Sakib & Tabassum (2025). Most complex architecture tested.</p>
+    </div>
+  </div>
+
+  <!-- Unsupervised -->
+  <div class="model-card" style="margin-top:1rem;border-top-color:#f59e0b">
+    <h4><span class="model-tag tag-unsup">UNSUPERVISED</span> Isolation Forest (Combined with XGBoost)</h4>
+    <p>Tree-based anomaly detection — anomalous points are isolated with fewer splits than normal points. 100 trees, contamination=0.1. Trained on the training set <em>without labels</em> — pure unsupervised learning. Used alongside XGBoost in a hybrid scoring formula to detect zero-day attacks (novel attack patterns not present in training data). <br><br>
+    <strong>Hybrid Score:</strong> attack_score = 0.5 × XGBoost_probability + 0.4 × IsoForest_anomaly_score<br>
+    Isolation Forest's role is NOT measured by Accuracy/F1 — those metrics apply only to the supervised XGBoost. ISO adds zero-day detection capability that cannot be measured on labelled datasets.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 2. RESULTS TABLE                                           -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-table"></i> Evaluation Results — All 13 Models</div>
+  <div class="hl-info">Test set: 504,473 flows (419,297 benign + 85,176 attacks). All metrics computed on held-out test data only.</div>
+
+  <div class="res-table-wrap" style="margin-top:.8rem">
+    <table class="res-table">
+      <thead>
+        <tr>
+          <th>Rank</th><th>Model</th><th>Type</th>
+          <th>Accuracy%</th><th>Precision</th><th>Recall</th>
+          <th>F1</th><th>FAR%</th><th>AUC-ROC</th>
+          <th>Train(s)</th><th>Infer(ms)</th><th>Composite↓</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="winner-row">
+          <td><span class="rank-badge rank-1">1</span></td>
+          <td><strong>XGBoost ⭐</strong></td><td>ML</td>
+          <td class="best">99.905</td>
+          <td class="good">0.9946</td>
+          <td class="best">0.9998</td>
+          <td class="best">0.9972</td>
+          <td class="good">0.11</td>
+          <td class="best">1.0000</td>
+          <td class="best">24s</td>
+          <td class="best">0.00065</td>
+          <td class="best">0.9948</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge rank-2">2</span></td>
+          <td>Decision Tree</td><td>ML</td>
+          <td>99.900</td><td>0.9959</td><td>0.9981</td>
+          <td>0.9970</td><td class="best">0.08</td><td>0.9994</td>
+          <td>33s</td><td class="best">0.00011</td><td>0.9867</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge rank-3">3</span></td>
+          <td>LightGBM</td><td>ML</td>
+          <td class="best">99.906</td><td class="good">0.9947</td><td class="best">0.9998</td>
+          <td class="best">0.9972</td><td>0.11</td><td class="best">1.0000</td>
+          <td class="best">15s</td><td>0.00226</td><td>0.9845</td>
+        </tr>
+        <tr>
+          <td>4</td><td>Random Forest</td><td>ML</td>
+          <td>99.900</td><td>0.9962</td><td>0.9979</td>
+          <td>0.9971</td><td class="best">0.08</td><td class="best">1.0000</td>
+          <td>101s</td><td>0.00121</td><td>0.9833</td>
+        </tr>
+        <tr>
+          <td>5</td><td>Gradient Boosting</td><td>ML</td>
+          <td>99.899</td><td class="best">0.9966</td><td>0.9974</td>
+          <td>0.9970</td><td class="best">0.07</td><td class="best">1.0000</td>
+          <td class="bad">5604s</td><td>0.00667</td><td>0.9462</td>
+        </tr>
+        <tr>
+          <td>6</td><td>Extra Trees</td><td>ML</td>
+          <td class="warn">99.814</td><td>0.9954</td><td class="warn">0.9936</td>
+          <td class="warn">0.9945</td><td>0.09</td><td>0.9988</td>
+          <td>100s</td><td>0.00514</td><td>0.9258</td>
+        </tr>
+        <tr>
+          <td>7</td><td>MLP (GPU)</td><td>DL</td>
+          <td class="warn">99.470</td><td class="warn">0.9729</td><td>0.9964</td>
+          <td class="warn">0.9845</td><td class="warn">0.56</td><td>0.9999</td>
+          <td>1396s</td><td>0.00407</td><td>0.9254</td>
+        </tr>
+        <tr>
+          <td>8</td><td>GRU (GPU)</td><td>DL</td>
+          <td class="warn">99.468</td><td class="warn">0.9741</td><td>0.9950</td>
+          <td class="warn">0.9844</td><td class="warn">0.54</td><td>0.9998</td>
+          <td>1395s</td><td>0.00514</td><td>0.9119</td>
+        </tr>
+        <tr>
+          <td>9</td><td>CNN+BiLSTM (GPU)</td><td>DL</td>
+          <td class="warn">99.494</td><td class="warn">0.9750</td><td>0.9956</td>
+          <td class="warn">0.9852</td><td class="warn">0.52</td><td>0.9999</td>
+          <td>1705s</td><td>0.00870</td><td>0.8943</td>
+        </tr>
+        <tr>
+          <td>10</td><td>BiLSTM (GPU)</td><td>DL</td>
+          <td class="warn">99.534</td><td class="warn">0.9801</td><td class="warn">0.9926</td>
+          <td class="warn">0.9863</td><td class="warn">0.41</td><td>0.9998</td>
+          <td>1588s</td><td>0.00837</td><td>0.8867</td>
+        </tr>
+        <tr>
+          <td>11</td><td>LSTM (GPU)</td><td>DL</td>
+          <td class="warn">99.522</td><td class="warn">0.9779</td><td class="warn">0.9942</td>
+          <td class="warn">0.9860</td><td class="warn">0.46</td><td>0.9999</td>
+          <td class="bad">4277s</td><td class="warn">0.01308</td><td>0.8628</td>
+        </tr>
+        <tr>
+          <td>12</td><td>1D-CNN (GPU)</td><td>DL</td>
+          <td class="warn">99.440</td><td class="warn">0.9723</td><td class="warn">0.9952</td>
+          <td class="warn">0.9836</td><td class="warn">0.58</td><td>0.9998</td>
+          <td>2453s</td><td class="warn">0.01566</td><td>0.8432</td>
+        </tr>
+        <tr>
+          <td>13</td><td>Logistic Regression</td><td>ML</td>
+          <td class="bad">93.151</td><td class="bad">0.7332</td><td class="bad">0.9343</td>
+          <td class="bad">0.8216</td><td class="bad">6.91</td><td class="warn">0.9792</td>
+          <td>8s</td><td class="best">0.00002</td><td class="bad">0.1000</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="color:var(--muted);font-size:.75rem;margin-top:.5rem">↓ Composite = Multi-Criteria Score (higher is better). ⭐ = Selected model.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 3. COMPARISON CHARTS                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-chart-bar"></i> Model Comparison Charts</div>
+  <div class="chart-row">
+    <div class="chart-box">
+      <h4>F1 Score by Model</h4>
+      <canvas id="f1Chart" height="260"></canvas>
+    </div>
+    <div class="chart-box">
+      <h4>False Alarm Rate % (lower = better)</h4>
+      <canvas id="farChart" height="260"></canvas>
+    </div>
+  </div>
+  <div class="chart-row" style="margin-top:1.2rem">
+    <div class="chart-box">
+      <h4>Recall (Detection Rate) by Model</h4>
+      <canvas id="recChart" height="260"></canvas>
+    </div>
+    <div class="chart-box">
+      <h4>Training Time — seconds (log scale)</h4>
+      <canvas id="timeChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 4. MODEL SELECTION CRITERIA                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-scale-balanced"></i> Multi-Criteria Model Selection</div>
+  <div class="prose-box">
+    Model selection was based on a <strong>weighted composite score</strong> across five dimensions rather than a single metric. F1 alone is insufficient for IDS — a model with perfect F1 but 10% false alarm rate causes alert fatigue where security analysts ignore alerts. The composite approach follows recommendations from recent IDS literature: <em>"No single metric should be used in isolation"</em> (Ross et al., Surgery 2023).
+  </div>
+
+  <div class="criteria-grid">
+    <div class="criteria-card">
+      <div class="cw">30%</div>
+      <h4>Recall (Detection Rate)</h4>
+      <p>Missing an attack is catastrophic. A missed ransomware flow can cost millions. Highest weight reflects security priority.</p>
+    </div>
+    <div class="criteria-card">
+      <div class="cw">25%</div>
+      <h4>F1 Score</h4>
+      <p>Harmonic mean of precision and recall. Maintains comparability with all reference papers and handles class imbalance correctly.</p>
+    </div>
+    <div class="criteria-card">
+      <div class="cw">20%</div>
+      <h4>False Alarm Rate (FAR)</h4>
+      <p>Too many false positives → alert fatigue → analysts ignore alerts → system becomes useless. Lower FAR = more trustworthy system. Inverted: lower FAR gives higher score.</p>
+    </div>
+    <div class="criteria-card">
+      <div class="cw">15%</div>
+      <h4>AUC-ROC</h4>
+      <p>Threshold-independent measure of discrimination ability. Important because the dashboard allows threshold adjustment at runtime.</p>
+    </div>
+    <div class="criteria-card">
+      <div class="cw">10%</div>
+      <h4>Inference Speed</h4>
+      <p>Real-time system must classify flows faster than they arrive. XGBoost at 0.00065ms/flow vs LSTM at 0.013ms/flow = 20x faster. Inverted: faster = higher score.</p>
+    </div>
+  </div>
+
+  <div class="formula" style="margin-top:1.2rem">
+    Composite Score = 0.30 × norm(Recall) + 0.25 × norm(F1) + 0.20 × (1−norm(FAR)) + 0.15 × norm(AUC) + 0.10 × (1−norm(Speed))
+  </div>
+  <p style="font-size:.8rem;color:var(--muted);text-align:center;margin-top:.3rem">Each metric normalised to [0,1] before weighting to prevent scale bias</p>
+
+  <div class="hl-ok" style="margin-top:1rem">
+    <strong>Why XGBoost was selected over LightGBM and Random Forest:</strong> All three achieve nearly identical F1 (0.9972). XGBoost wins on composite score (0.9948) because it has the best recall (0.9998 — only 19 attacks missed out of 85,176) combined with fast inference (0.00065ms) and perfect AUC (1.0000). LightGBM has identical recall but slower inference. Random Forest has marginally lower recall (misses 181 attacks vs XGBoost's 19).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 5. WINNER DEEP DIVE — XGBoost                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-trophy" style="color:#ffd700"></i> XGBoost — Selected Model Deep Dive</div>
+
+  <div class="prose-box">
+    <strong>Full name:</strong> eXtreme Gradient Boosting (XGBoost) — Chen & Guestrin, 2016<br>
+    <strong>Type:</strong> Supervised, ensemble, gradient boosting<br>
+    <strong>Parameters used:</strong> n_estimators=300, max_depth=6, learning_rate=0.1, subsample=0.8, colsample_bytree=0.8, scale_pos_weight=4<br>
+    <strong>Training time:</strong> 24 seconds on full 2M+ row dataset<br>
+    <strong>Inference time:</strong> 0.00065ms per flow — capable of classifying 1.5 million flows per second
+  </div>
+
+  <div class="mech-grid">
+    <div class="mech-box">
+      <h4><i class="fa fa-gears" style="color:var(--accent2)"></i> How XGBoost Works</h4>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Step 1 — Initial prediction:</strong> Start with a simple base prediction (mean of all labels).</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Step 2 — Compute residuals:</strong> Calculate the difference between predicted and actual labels. These are the "errors" the next tree must fix.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Step 3 — Train a tree on residuals:</strong> A new decision tree is trained to predict the residuals (errors), not the original labels.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Step 4 — Update prediction:</strong> Add the new tree's output × learning_rate (0.1) to the current prediction. Learning rate prevents overfitting by shrinking each tree's contribution.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Step 5 — Repeat 300 times:</strong> Each new tree corrects remaining errors. After 300 trees, the ensemble prediction is highly accurate.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Regularisation:</strong> L1 and L2 regularisation terms in the objective function prevent overfitting — distinguishes XGBoost from vanilla Gradient Boosting.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Class imbalance handling:</strong> scale_pos_weight=4 tells XGBoost to assign 4× more weight to the minority class (attacks), compensating for the 4.92:1 imbalance.</div></div>
+    </div>
+
+    <div class="mech-box">
+      <h4><i class="fa fa-chart-line" style="color:#4ade80"></i> XGBoost Final Metrics</h4>
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem"><span>Accuracy</span><strong style="color:var(--accent2)">99.905%</strong></div>
+        <div style="background:var(--bg3);height:8px;border-radius:4px;overflow:hidden"><div style="height:100%;width:99.905%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:4px"></div></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem"><span>Recall (attacks caught)</span><strong style="color:#4ade80">99.98%</strong></div>
+        <div style="background:var(--bg3);height:8px;border-radius:4px;overflow:hidden"><div style="height:100%;width:99.98%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:4px"></div></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem"><span>Precision</span><strong style="color:var(--accent2)">99.46%</strong></div>
+        <div style="background:var(--bg3);height:8px;border-radius:4px;overflow:hidden"><div style="height:100%;width:99.46%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:4px"></div></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem"><span>F1 Score</span><strong style="color:var(--accent2)">99.72%</strong></div>
+        <div style="background:var(--bg3);height:8px;border-radius:4px;overflow:hidden"><div style="height:100%;width:99.72%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:4px"></div></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem"><span>AUC-ROC</span><strong style="color:#4ade80">100.00%</strong></div>
+        <div style="background:var(--bg3);height:8px;border-radius:4px;overflow:hidden"><div style="height:100%;width:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:4px"></div></div>
+      </div>
+      <div style="margin-top:1rem;padding:.8rem;background:var(--bg3);border-radius:8px;font-size:.82rem">
+        <strong>Confusion Matrix:</strong><br>
+        ✅ True Negatives (correct benign): <span style="color:#4ade80">418,837</span><br>
+        ✅ True Positives (caught attacks): <span style="color:#4ade80">85,157</span><br>
+        ⚠ False Positives (false alarms): <span style="color:#fbbf24">460</span><br>
+        ❌ False Negatives (missed attacks): <span style="color:#f87171">19</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 6. ISOLATION FOREST DEEP DIVE                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-binoculars" style="color:#f59e0b"></i> Isolation Forest — Unsupervised Anomaly Detector</div>
+
+  <div class="mech-grid">
+    <div class="mech-box">
+      <h4><i class="fa fa-tree" style="color:#f59e0b"></i> How Isolation Forest Works</h4>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Core insight:</strong> Anomalies are <em>easier to isolate</em> than normal points. A normal flow surrounded by many similar flows requires many random splits to isolate. An anomalous flow surrounded by nothing similar is isolated in very few splits.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Building a tree:</strong> Randomly select a feature, then randomly select a split value between that feature's min and max. Recursively partition until each point is isolated or max depth reached.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Anomaly score:</strong> Average path length to isolate a point across 100 trees. Short path = anomaly. Long path = normal. Score is sigmoid-normalised to [0,1].</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>No labels required:</strong> Trained on the training set without using the Label column. It learns what "normal" traffic looks like purely from the data distribution.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Zero-day detection:</strong> Can flag attack patterns it has never seen before — if a flow deviates from learned normal patterns, it scores high regardless of attack type.</div></div>
+    </div>
+
+    <div class="mech-box">
+      <h4><i class="fa fa-diagram-project" style="color:#f59e0b"></i> Hybrid Scoring with XGBoost</h4>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>XGBoost contribution (α=0.5):</strong> Supervised probability that this flow matches known attack patterns. Highly accurate for attack types seen during training.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Isolation Forest contribution (β=0.4):</strong> Anomaly score — how different this flow is from normal traffic. Captures zero-day attacks that XGBoost cannot classify.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Combined formula:</strong></div></div>
+      <div class="formula" style="font-size:.78rem;text-align:left">
+        attack_score = 0.5 × XGB_prob + 0.4 × ISO_anomaly_score<br>
+        ISO_score = sigmoid(−iso_raw × 10)<br>
+        label = "Attack" if attack_score ≥ threshold else "Benign"
+      </div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Runtime tunable:</strong> α, β, and threshold are adjustable via the dashboard sliders without retraining — allowing security teams to tune sensitivity in real-time.</div></div>
+      <div class="mech-step"><div class="mech-dot"></div><div class="mech-text"><strong>Why this combination:</strong> XGBoost alone may miss novel attack variants. Isolation Forest alone has high false alarm rate. Together they achieve higher recall while keeping FAR low.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 7. PROJECT FLOWCHART                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+  <div class="ds-section-title"><i class="fa fa-sitemap"></i> Complete Project Architecture Flowchart</div>
+  <div class="flowchart-wrap">
+  <img src="{{ url_for('static', filename='images/flowchart.png') }}" 
+       alt="Project Flowchart"
+       style="max-width:100%; height:auto;">
+</div>
+</div>
+
+</div><!-- end page-body -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MODELS = ['XGBoost','Decision Tree','LightGBM','Random Forest','Gradient Boost','Extra Trees','MLP GPU','GRU GPU','CNN+BiLSTM','BiLSTM GPU','LSTM GPU','1D-CNN GPU','Logistic Reg'];
+const F1S    = [0.9972,0.9970,0.9972,0.9971,0.9970,0.9945,0.9845,0.9844,0.9852,0.9863,0.9860,0.9836,0.8216];
+const FARS   = [0.11,0.08,0.11,0.08,0.07,0.09,0.56,0.54,0.52,0.41,0.46,0.58,6.91];
+const RECS   = [0.9998,0.9981,0.9998,0.9979,0.9974,0.9936,0.9964,0.9950,0.9956,0.9926,0.9942,0.9952,0.9343];
+const TIMES  = [24,33,15,101,5604,100,1396,1395,1705,1588,4277,2453,8];
+const COLORS = MODELS.map((_,i) => i===0 ? '#22c55e' : i<7 ? '#7c3aed' : '#06b6d4');
+const opts   = { plugins:{legend:{display:false}}, scales:{
+  x:{ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#2d2d4e'}},
+  y:{ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#2d2d4e'}}
+}};
+
+new Chart(document.getElementById('f1Chart'),{
+  type:'bar', data:{labels:MODELS,datasets:[{data:F1S,backgroundColor:COLORS,borderRadius:4}]},
+  options:{...opts, scales:{...opts.scales, y:{...opts.scales.y, min:0.8, max:1.0}}}
+});
+new Chart(document.getElementById('farChart'),{
+  type:'bar', data:{labels:MODELS,datasets:[{data:FARS,backgroundColor:MODELS.map((_,i)=>i===0?'#fbbf24':FARS[i]>1?'#ef4444':'#7c3aed'),borderRadius:4}]},
+  options:{...opts}
+});
+new Chart(document.getElementById('recChart'),{
+  type:'bar', data:{labels:MODELS,datasets:[{data:RECS,backgroundColor:COLORS,borderRadius:4}]},
+  options:{...opts, scales:{...opts.scales, y:{...opts.scales.y, min:0.8, max:1.0}}}
+});
+new Chart(document.getElementById('timeChart'),{
+  type:'bar', data:{labels:MODELS,datasets:[{data:TIMES,backgroundColor:TIMES.map(t=>t<100?'#22c55e':t<1000?'#fbbf24':'#ef4444'),borderRadius:4}]},
+  options:{...opts, scales:{...opts.scales, y:{...opts.scales.y, type:'logarithmic'}}}
+});
+</script>
+{% endblock %}

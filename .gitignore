@@ -1,0 +1,25 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+.env.*
+
+# Large dataset
+data/
+
+# GeoIP database
+GeoLite2-City.mmdb
+
+# Local runtime database
+nids.db
+
+# IDE settings
+.vscode/

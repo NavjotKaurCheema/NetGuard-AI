@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Page-specific styles ───────────────────────────────────── */
+.page-hero {
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1040 50%, #0a1628 100%);
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.page-hero h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 800; margin-bottom: 0.6rem; }
+.page-hero p  { color: var(--muted); max-width: 680px; margin: 0 auto; line-height: 1.7; font-size:0.95rem; }
+.page-body    { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* Section headers */
+.ds-section { margin-bottom: 2.5rem; }
+.ds-section-title {
+  font-size: 1.25rem; font-weight: 700;
+  color: var(--accent2);
+  border-left: 4px solid var(--accent);
+  padding-left: 0.8rem;
+  margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+
+/* Info cards */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.info-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.1rem 1.2rem;
+  text-align: center;
+}
+.info-card .ic-val { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+.info-card .ic-lbl { color: var(--muted); font-size: 0.8rem; margin-top: 0.3rem; }
+.info-card .ic-sub { color: var(--text); font-size: 0.75rem; margin-top: 0.2rem; opacity:0.7; }
+
+/* Prose box */
+.prose-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.3rem 1.5rem;
+  line-height: 1.8; font-size: 0.9rem; color: var(--text);
+  margin-bottom: 1.2rem;
+}
+.prose-box a { color: var(--accent2); }
+
+/* Feature table */
+.feat-table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+.feat-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.feat-table th {
+  background: var(--accent); color: #fff; padding: 0.65rem 0.9rem;
+  text-align: left; font-weight: 600; white-space: nowrap;
+}
+.feat-table td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border); }
+.feat-table tr:nth-child(even) td { background: var(--bg3); }
+.feat-table tr:hover td { background: #2d2d4e55; }
+.feat-cat { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; }
+.feat-cat.volume  { background:#0e7cae33; color:#06b6d4; }
+.feat-cat.timing  { background:#7c3aed33; color:#a78bfa; }
+.feat-cat.flags   { background:#ef444433; color:#f87171; }
+.feat-cat.session { background:#22c55e33; color:#4ade80; }
+.feat-cat.size    { background:#f59e0b33; color:#fbbf24; }
+.feat-badge-sel   { background:#22c55e22; color:#4ade80; font-size:0.7rem; padding:1px 6px; border-radius:8px; border:1px solid #22c55e44; }
+.feat-badge-rem   { background:#ef444422; color:#f87171; font-size:0.7rem; padding:1px 6px; border-radius:8px; border:1px solid #ef444444; }
+
+/* Pipeline steps */
+.pipeline { display: flex; flex-direction: column; gap: 0.8rem; }
+.pipe-step {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.9rem 1.2rem;
+  display: flex; align-items: flex-start; gap: 1rem;
+}
+.pipe-num {
+  min-width: 32px; height: 32px;
+  background: var(--accent); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.85rem; color: #fff; flex-shrink:0;
+}
+.pipe-text h4  { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem; }
+.pipe-text p   { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+.pipe-result   { font-size: 0.75rem; color: var(--accent2); margin-top: 0.3rem; font-weight: 600; }
+
+/* Split visualisation */
+.split-vis {
+  border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--border); height: 36px;
+  display: flex; margin: 0.8rem 0;
+}
+.split-train { background: var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; width:80%; }
+.split-test  { background: #06b6d4;   display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; width:20%; }
+
+/* Attack distribution chart */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1rem; }
+@media(max-width:700px){ .chart-row { grid-template-columns: 1fr; } }
+.chart-box-sm {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.2rem;
+}
+.chart-box-sm h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--text); }
+
+/* Highlight box */
+.hl-box {
+  border-radius: var(--radius); padding: 1rem 1.3rem;
+  font-size: 0.85rem; line-height: 1.7; margin-bottom: 1rem;
+  border-left: 4px solid;
+}
+.hl-info   { background:#0e7cae22; border-color:#06b6d4; color: var(--text); }
+.hl-warn   { background:#f59e0b22; border-color:#fbbf24; color: var(--text); }
+.hl-ok     { background:#22c55e22; border-color:#4ade80; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ── PAGE HERO ──────────────────────────────────────────────── -->
+<div class="page-hero">
+  <h1><i class="fa fa-database" style="color:var(--accent2)"></i> Dataset Overview</h1>
+  <p>Complete technical details about the CIC-IDS-2017 dataset — its origin, structure, preprocessing pipeline, feature selection methodology, and how it was partitioned for training and evaluation.</p>
+</div>
+
+<div class="page-body">
+
+  <!-- ── 1. DATASET SOURCE ──────────────────────────────────────── -->
+  <div class="ds-section">
+    <div class="ds-section-title"><i class="fa fa-circle-info"></i> Dataset Source & Overview</div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="ic-val">2.83M</div>
+        <div class="ic-lbl">Total Flow Records</div>
+        <div class="ic-sub">Before preprocessing</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">79</div>
+        <div class="ic-lbl">Total Columns</div>
+        <div class="ic-sub">78 features + 1 label</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">15</div>
+        <div class="ic-lbl">Attack Categories</div>
+        <div class="ic-sub">DoS, DDoS, Botnet, XSS…</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">5 Days</div>
+        <div class="ic-lbl">Data Collection</div>
+        <div class="ic-sub">Mon–Fri, controlled lab</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">2017</div>
+        <div class="ic-lbl">Year Published</div>
+        <div class="ic-sub">Canadian Institute for Cybersecurity</div>
+      </div>
+    </div>
+
+    <div class="prose-box">
+      <strong>Name:</strong> CICIDS2017 — Canadian Institute for Cybersecurity Intrusion Detection Evaluation Dataset 2017<br><br>
+      <strong>Source:</strong> Canadian Institute for Cybersecurity (CIC), University of New Brunswick, Canada.<br>
+      <strong>Download:</strong> <a href="https://www.unb.ca/cic/datasets/ids-2017.html" target="_blank">https://www.unb.ca/cic/datasets/ids-2017.html</a> &nbsp;|&nbsp;
+      Also available on <a href="https://www.kaggle.com/datasets/chethuhn/network-intrusion-dataset" target="_blank">Kaggle</a><br><br>
+      <strong>Generation Tool:</strong> CICFlowMeter — extracts 78 statistical features from raw pcap network captures, including packet-level statistics, flow-level timing, and TCP flag counts.<br><br>
+      <strong>Why this dataset:</strong> CICIDS2017 is the most widely cited IDS benchmark in recent literature (Rajathi & Rukmani 2025; Sakib & Tabassum 2025; Ramesh IJIRT 2024). It contains realistic, diverse attack traffic captured from actual network hardware with 25 users, making it representative of real-world network environments.
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box-sm">
+        <h4><i class="fa fa-chart-pie" style="color:var(--accent2)"></i> &nbsp;Class Distribution (Raw)</h4>
+        <canvas id="classChart" height="200"></canvas>
+      </div>
+      <div class="chart-box-sm">
+        <h4><i class="fa fa-shield-virus" style="color:var(--danger)"></i> &nbsp;Attack Type Breakdown</h4>
+        <canvas id="attackChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. PREPROCESSING PIPELINE ─────────────────────────────── -->
+  <div class="ds-section">
+    <div class="ds-section-title"><i class="fa fa-gears"></i> Preprocessing Pipeline</div>
+    <!-- <div class="hl-info">All preprocessing steps follow <strong>Sakib & Tabassum (2025)</strong> and <strong>Rajathi & Rukmani (2025)</strong>. Applied in strict order — each step depends on the previous.</div> -->
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-num">1</div>
+        <div class="pipe-text">
+          <h4>Duplicate Row Removal</h4>
+          <p>Identical rows (same values across all 78 features) were removed. Duplicates inflate metrics artificially and cause overfitting — the model memorises repeated rows rather than learning patterns.</p>
+          <div class="pipe-result">2,830,743 → 2,522,362 rows &nbsp;|&nbsp; Removed: 308,381 duplicates (10.89%)</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">2</div>
+        <div class="pipe-text">
+          <h4>Infinite Value Replacement</h4>
+          <p>Flow Bytes/s and Flow Packets/s can produce ±∞ when flow duration is 0 (single-packet flows). All ±Inf values were replaced with NaN for subsequent imputation. Machine learning models cannot process infinite values.</p>
+          <div class="pipe-result">All ±Inf replaced with NaN before imputation step</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">3</div>
+        <div class="pipe-text">
+          <h4>Missing Value Imputation</h4>
+          <p>After Inf replacement, 3,128 NaN values remained. These were imputed with the column median (more robust than mean for skewed distributions). Rows with missing labels were dropped.</p>
+          <div class="pipe-result">3,128 values imputed with per-column median</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">4</div>
+        <div class="pipe-text">
+          <h4>Skewness Correction (log1p transform)</h4>
+          <p>Network traffic features are heavily right-skewed — a few large flows dominate. Features with skewness &gt; 3.0 and non-negative values were transformed using log1p(x) = ln(1+x). This compresses the range, improving gradient-based model convergence. <em>(Sakib & Tabassum 2025)</em></p>
+          <div class="pipe-result">40 of 78 features corrected &nbsp;|&nbsp; e.g. Total Fwd Packets, Flow Duration, Total Length of Fwd Packets</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">5</div>
+        <div class="pipe-text">
+          <h4>Feature Standardisation (StandardScaler)</h4>
+          <p>All selected features scaled to zero mean and unit variance. Critical for Isolation Forest (geometry-based) and deep learning models. Fitted only on training data — applied to test data using training statistics to prevent data leakage.</p>
+          <div class="pipe-result">Each feature: mean=0, std=1 &nbsp;|&nbsp; Scaler fitted on train set only</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-grid" style="margin-top:1.2rem">
+      <div class="info-card">
+        <div class="ic-val">2,522,362</div>
+        <div class="ic-lbl">Rows After Preprocessing</div>
+        <div class="ic-sub">Down from 2,830,743</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">2,096,484</div>
+        <div class="ic-lbl">Benign Flows</div>
+        <div class="ic-sub">83.1% of dataset</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">425,878</div>
+        <div class="ic-lbl">Attack Flows</div>
+        <div class="ic-sub">16.9% of dataset</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">4.92:1</div>
+        <div class="ic-lbl">Class Imbalance Ratio</div>
+        <div class="ic-sub">Handled via class_weight</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. FEATURE SELECTION ───────────────────────────────────── -->
+  <div class="ds-section">
+    <div class="ds-section-title"><i class="fa fa-filter"></i> Feature Selection Methodology</div>
+
+    <div class="prose-box">
+      From 78 available features, a <strong>four-stage research-backed pipeline</strong> was applied to select the 30 most discriminative features. Method follows <strong>Hossain et al. (cited in Rajathi & Rukmani 2025)</strong> who proposed correlation analysis + mutual information for IDS feature selection, and <strong>Ramesh IJIRT (2024)</strong> who used Random Forest importance on CICIDS2017.
+    </div>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-num">S1</div>
+        <div class="pipe-text">
+          <h4>Near-Constant Feature Removal (Variance Filter)</h4>
+          <p>Features with standard deviation &lt; 0.01 across all rows carry no discriminative information. Removed 10 features including all bulk-rate features (Fwd/Bwd Avg Bytes/Bulk, etc.) which are zero for virtually all flows.</p>
+          <div class="pipe-result">78 → 68 features &nbsp;|&nbsp; Removed: Bwd PSH Flags, Fwd/Bwd URG Flags, CWE Flag Count, all Bulk Rate features</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">S2</div>
+        <div class="pipe-text">
+          <h4>Pearson Correlation Filter (r &gt; 0.95)</h4>
+          <p>Highly correlated feature pairs are redundant — they encode the same information. For each correlated pair, the lower-importance feature was removed. Notable redundancies: Avg Fwd Segment Size ≈ Fwd Packet Length Mean (identical formula), Subflow Fwd Packets = Total Fwd Packets, Packet Length Variance = Std².</p>
+          <div class="pipe-result">68 → 46 features &nbsp;|&nbsp; Removed 22 redundant features</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">S3</div>
+        <div class="pipe-text">
+          <h4>Random Forest Gini Importance Ranking</h4>
+          <p>A 150-tree Random Forest was trained on a 150,000-row stratified sample. Gini importance measures how much each feature reduces class impurity across all trees. Top 35 features by importance were retained as candidates.</p>
+          <div class="pipe-result">Top feature: Bwd Packet Length Std (0.121) &nbsp;|&nbsp; Selected top 35 candidates</div>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">S4</div>
+        <div class="pipe-text">
+          <h4>Mutual Information Cross-Validation</h4>
+          <p>Mutual Information (MI) measures non-linear statistical dependency between each feature and the label — it captures relationships that Pearson correlation misses. Features confirmed by BOTH RF Gini AND MI rankings form the final set. This dual-method validation ensures robustness.</p>
+          <div class="pipe-result">Final: 30 features confirmed by both methods &nbsp;|&nbsp; All 30 appear in both Top-35 RF and Top-35 MI lists</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hl-ok" style="margin-top:1rem">
+      <strong>Result:</strong> 30 research-validated features selected from 78. This represents a 61.5% reduction in feature space while retaining maximum discriminative power — improving model generalisation and reducing inference time.
+    </div>
+  </div>
+
+  <!-- ── 4. FEATURE TABLE ───────────────────────────────────────── -->
+  <div class="ds-section">
+    <div class="ds-section-title"><i class="fa fa-table-list"></i> Selected Features (30 of 78)</div>
+    <div class="hl-warn">Green badge = Selected for training &nbsp;|&nbsp; Category colour coding shown below the table.</div>
+    <div class="feat-table-wrap" style="margin-top:0.8rem">
+      <table class="feat-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Feature Name</th><th>Category</th><th>RF Rank</th><th>MI Rank</th><th>Why Important</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Bwd Packet Length Std</td><td><span class="feat-cat size">Size</span></td><td>#1</td><td>#10</td><td>Variance of backward packet sizes — attacks show abnormal patterns</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>2</td><td>Packet Length Variance</td><td><span class="feat-cat size">Size</span></td><td>#2</td><td>#1</td><td>Statistical spread of all packet sizes — top feature by both methods</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>3</td><td>Bwd Packet Length Max</td><td><span class="feat-cat size">Size</span></td><td>#3</td><td>#6</td><td>Max backward packet size distinguishes DoS from benign</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>4</td><td>Packet Length Mean</td><td><span class="feat-cat size">Size</span></td><td>#4</td><td>#2</td><td>Average packet size — attack traffic uses characteristically sized packets</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>5</td><td>Max Packet Length</td><td><span class="feat-cat size">Size</span></td><td>#5</td><td>#4</td><td>Maximum packet across entire flow — reveals payload anomalies</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>6</td><td>Total Length of Bwd Packets</td><td><span class="feat-cat volume">Volume</span></td><td>#6</td><td>#3</td><td>Total bytes in backward direction — asymmetry reveals attacks</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>7</td><td>Total Length of Fwd Packets</td><td><span class="feat-cat volume">Volume</span></td><td>#7</td><td>#5</td><td>Total bytes sent — high volume = flooding attack signature</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>8</td><td>Destination Port</td><td><span class="feat-cat session">Session</span></td><td>#8</td><td>#8</td><td>Attack types target specific ports (22=SSH, 80=HTTP, 21=FTP)</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>9</td><td>Total Fwd Packets</td><td><span class="feat-cat volume">Volume</span></td><td>#9</td><td>#29</td><td>Packet count in forward direction — flood attacks send thousands</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>10</td><td>Flow IAT Std</td><td><span class="feat-cat timing">Timing</span></td><td>#10</td><td>#24</td><td>Variability of inter-arrival times — machine attacks are highly regular</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>11</td><td>Fwd IAT Std</td><td><span class="feat-cat timing">Timing</span></td><td>#11</td><td>#21</td><td>Forward IAT variance — zero for automated attack tools</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>12</td><td>Fwd Header Length</td><td><span class="feat-cat size">Size</span></td><td>#14</td><td>#13</td><td>TCP/IP header size reveals packet structure anomalies</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>13</td><td>Flow IAT Max</td><td><span class="feat-cat timing">Timing</span></td><td>#15</td><td>#11</td><td>Longest gap between packets — Slowloris attacks have large IAT</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>14</td><td>Fwd Packet Length Mean</td><td><span class="feat-cat size">Size</span></td><td>#16</td><td>#14</td><td>Mean forward packet size — uniform small sizes = scanning</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>15</td><td>Fwd IAT Mean</td><td><span class="feat-cat timing">Timing</span></td><td>#17</td><td>#12</td><td>Average time between forward packets</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>16</td><td>Flow IAT Mean</td><td><span class="feat-cat timing">Timing</span></td><td>#18</td><td>#23</td><td>Overall flow inter-arrival timing pattern</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>17</td><td>Bwd Header Length</td><td><span class="feat-cat size">Size</span></td><td>#19</td><td>#17</td><td>Backward direction header sizes</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>18</td><td>Bwd Packets/s</td><td><span class="feat-cat volume">Volume</span></td><td>#21</td><td>#18</td><td>Rate of backward packets — response rate anomalies</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>19</td><td>Init_Win_bytes_backward</td><td><span class="feat-cat session">Session</span></td><td>#22</td><td>#7</td><td>TCP initial window size — botnet uses non-standard values</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>20</td><td>Init_Win_bytes_forward</td><td><span class="feat-cat session">Session</span></td><td>#23</td><td>#9</td><td>Forward TCP window — reveals handshake anomalies</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>21</td><td>Fwd Packets/s</td><td><span class="feat-cat volume">Volume</span></td><td>#25</td><td>#19</td><td>Forward packet rate — high rate = DoS/DDoS</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>22</td><td>Total Backward Packets</td><td><span class="feat-cat volume">Volume</span></td><td>#26</td><td>#28</td><td>Backward packet count — zero backward = one-sided attacks</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>23</td><td>Flow Packets/s</td><td><span class="feat-cat volume">Volume</span></td><td>#27</td><td>#22</td><td>Total flow packet rate</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>24</td><td>Flow Duration</td><td><span class="feat-cat timing">Timing</span></td><td>#28</td><td>#16</td><td>Total flow duration — very short=scan, very long=persistent attack</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>25</td><td>Flow Bytes/s</td><td><span class="feat-cat volume">Volume</span></td><td>#29</td><td>#15</td><td>Data rate of entire flow</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>26</td><td>Fwd Packet Length Min</td><td><span class="feat-cat size">Size</span></td><td>#30</td><td>#32</td><td>Minimum forward packet size</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>27</td><td>Fwd IAT Min</td><td><span class="feat-cat timing">Timing</span></td><td>#31</td><td>#35</td><td>Minimum gap between forward packets</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>28</td><td>Fwd Packet Length Std</td><td><span class="feat-cat size">Size</span></td><td>#32</td><td>#20</td><td>Variability of forward packet sizes</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>29</td><td>Bwd Packet Length Min</td><td><span class="feat-cat size">Size</span></td><td>#34</td><td>#33</td><td>Minimum backward packet size</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td>30</td><td>Bwd IAT Total</td><td><span class="feat-cat timing">Timing</span></td><td>#35</td><td>#25</td><td>Total inter-arrival time in backward direction</td><td><span class="feat-badge-sel">Selected</span></td></tr>
+          <tr><td colspan="7" style="padding:0.4rem 0.9rem;color:var(--muted);font-size:0.78rem;font-style:italic">… 48 features removed (10 near-constant + 22 highly correlated + 16 low RF/MI rank)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 5. TRAIN / TEST SPLIT ──────────────────────────────────── -->
+  <div class="ds-section">
+    <div class="ds-section-title"><i class="fa fa-scissors"></i> Data Split for Training &amp; Evaluation</div>
+
+    <div class="split-vis">
+      <div class="split-train">Training Set — 80% &nbsp;(2,017,889 flows)</div>
+      <div class="split-test">Test — 20%</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="ic-val">2,017,889</div>
+        <div class="ic-lbl">Training Samples</div>
+        <div class="ic-sub">80% of cleaned data</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">504,473</div>
+        <div class="ic-lbl">Test Samples</div>
+        <div class="ic-sub">20% held-out, never seen during training</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">Stratified</div>
+        <div class="ic-lbl">Split Method</div>
+        <div class="ic-sub">Same 83:17 ratio in both splits</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-val">42</div>
+        <div class="ic-lbl">Random Seed</div>
+        <div class="ic-sub">Reproducible split every run</div>
+      </div>
+    </div>
+
+    <div class="prose-box">
+      <strong>Stratified Split:</strong> sklearn's <code>train_test_split(stratify=y)</code> ensures both training and test sets maintain the same 83:17 benign:attack ratio as the full dataset. Without stratification, a random split could accidentally put most attacks in one partition, leading to misleading evaluation metrics.<br><br>
+      <strong>Data Leakage Prevention:</strong> The StandardScaler is <em>fitted only on training data</em> and then applied to the test set using training statistics. This prevents any test-set information from influencing preprocessing — a common source of artificially inflated metrics in published IDS papers.<br><br>
+      <strong>Evaluation:</strong> All metrics (Accuracy, Precision, Recall, F1, AUC-ROC, FAR) are computed exclusively on the 504,473-sample test set. The model has never seen these samples during training.
+    </div>
+  </div>
+
+</div><!-- end page-body -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Class distribution pie chart
+new Chart(document.getElementById('classChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Benign (83.1%)', 'Attack (16.9%)'],
+    datasets: [{
+      data: [2096484, 425878],
+      backgroundColor: ['#22c55e', '#ef4444'],
+      borderColor: ['#1a1a2e'],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#e2e8f0', font: { size: 11 } } }
+    }
+  }
+});
+
+// Attack type bar chart
+new Chart(document.getElementById('attackChart'), {
+  type: 'bar',
+  data: {
+    labels: ['DoS Hulk','PortScan','DDoS','DoS GoldenEye','FTP-Patator','SSH-Patator','Bot','Brute Force','DoS slowloris','DoS Slowhttp','XSS','SQL Inj','Infiltration','Heartbleed'],
+    datasets: [{
+      label: 'Count',
+      data: [231073, 158930, 128027, 10293, 7938, 5897, 1966, 1507, 5796, 5499, 652, 21, 36, 11],
+      backgroundColor: '#7c3aed',
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8', font:{size:10} }, grid: { color: '#2d2d4e' } },
+      y: { ticks: { color: '#e2e8f0', font:{size:9} }, grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

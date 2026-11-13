@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetGuard-AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <i class="fa fa-shield-halved"></i>
+      <span>NetGuard-AI </span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="{{ url_for('index') }}"      {% if request.endpoint=='index'      %}class="active"{% endif %}>Home</a></li>
+      <li><a href="{{ url_for('index') }}#features" >Features</a></li>
+      <!-- <li><a href="{{ url_for('dataset') }}#dataset">About Dataset</a></li> -->
+      <!-- <li><a href="{{ url_for('model_evaluation') }}#model_evaluation">Model Evaluation</a></li> -->
+      <li><a href="{{ url_for('index') }}#why"      >Why it Matters</a></li>
+      <li><a href="{{ url_for('index') }}#tools"    >Tools</a></li>
+      <li><a href="{{ url_for('login') }}#login">login </a></li>
+      
+      {% if session.get('user_id') %}
+      <li><a href="{{ url_for('prediction') }}" {% if request.endpoint=='prediction' %}class="active"{% endif %}>Prediction</a></li>
+      <li><a href="{{ url_for('analysis') }}"   {% if request.endpoint=='analysis'   %}class="active"{% endif %}>Analysis</a></li>
+      <li><a href="{{ url_for('dataset') }}"   {% if request.endpoint=='dataset'   %}class="active"{% endif %}>About Dataset</a></li>
+      <li><a href="{{ url_for('model_evaluation') }}"   {% if request.endpoint=='model_evaluation'   %}class="active"{% endif %}>Models Evaluation</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <!-- ── PAGE CONTENT ── -->
+  {% block content %}{% endblock %}
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <p>NetGuard-AI | 2026</p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

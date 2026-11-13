@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <h2><i class="fa fa-user-circle"></i> Login</h2>
+    {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+    <div class="form-group">
+      <label><i class="fa fa-user"></i> Username</label>
+      <input type="text" id="username" placeholder="your_username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label><i class="fa fa-lock"></i> Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-primary full-w" onclick="doLogin()"><i class="fa fa-right-to-bracket"></i> Login</button>
+    <p class="auth-link">New here? <a href="{{ url_for('register') }}">Register now</a></p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function doLogin() {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{{ url_for("login") }}';
+  ['username','password'].forEach(id => {
+    const inp = document.createElement('input');
+    inp.name  = id;
+    inp.value = document.getElementById(id).value;
+    form.appendChild(inp);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+document.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <div>
+    <h1><i class="fa fa-chart-pie"></i> Analysis Dashboard</h1>
+  </div>
+  <div class="user-bar">
+    <span>Welcome, <strong>{{ username }}</strong>!</span>
+    <a href="{{ url_for('prediction') }}" class="btn-sm">← Prediction</a>
+    <a href="{{ url_for('logout') }}" class="btn-sm btn-outline">Logout</a>
+  </div>
+</div>
+
+<!-- METRIC CARDS -->
+<div class="metric-grid" id="metric-cards">
+  <div class="metric-card"><h2 id="m-acc">--</h2><p>Accuracy</p><small>Overall classification accuracy</small></div>
+  <div class="metric-card"><h2 id="m-pre">--</h2><p>Precision</p><small>Proportion of true positives among predicted positives</small></div>
+  <div class="metric-card"><h2 id="m-rec">--</h2><p>Recall</p><small>Proportion of true positives detected</small></div>
+  <div class="metric-card"><h2 id="m-f1" >--</h2><p>F1 Score</p><small>Harmonic mean of precision &amp; recall</small></div>
+</div>
+
+<!-- CHARTS ROW 1 -->
+<div class="charts-row">
+  <div class="chart-box">
+    <h3><i class="fa fa-table-cells"></i> Confusion Matrix</h3>
+    <canvas id="cmChart" height="220"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3><i class="fa fa-chart-line"></i> ROC Curve</h3>
+    <canvas id="rocChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- CHARTS ROW 2 -->
+<div class="charts-row">
+  <div class="chart-box">
+    <h3><i class="fa fa-chart-area"></i> Precision-Recall Curve</h3>
+    <canvas id="prChart" height="220"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3><i class="fa fa-list-ol"></i> Top Features Influencing Attack Decision</h3>
+    <canvas id="featChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="charts-row">
+  <div class="chart-box">
+    <h3><i class="fa fa-circle-info"></i> Additional Analytics</h3>
+    <p style="color:#94a3b8;font-size:0.9rem">Confusion matrix &amp; curves summarize model performance. Use parameter tuning in the Prediction page to refine trade-offs between precision and recall.</p>
+    <div class="live-stat-row">
+      <div><span id="live-flows">0</span><p>Total Flows Logged</p></div>
+      <div><span id="live-attacks">0</span><p>Total Attacks Detected</p></div>
+    </div>
+  </div>
+  <div class="chart-box">
+    <h3><i class="fa fa-skull-crossbones"></i> Top Attacking IPs</h3>
+    <div id="top-ips"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadMetrics() {
+  const res  = await fetch('/get_metrics');
+  const data = await res.json();
+
+  // Cards
+  document.getElementById('m-acc').textContent = data.accuracy  + '%';
+  document.getElementById('m-pre').textContent = data.precision + '%';
+  document.getElementById('m-rec').textContent = data.recall    + '%';
+  document.getElementById('m-f1').textContent  = data.f1        + '%';
+
+  // Live stats
+  document.getElementById('live-flows').textContent   = data.total_flows   || 0;
+  document.getElementById('live-attacks').textContent = data.total_attacks || 0;
+
+  // Top IPs
+  const ipBox = document.getElementById('top-ips');
+  if(data.top_ips && data.top_ips.length) {
+    ipBox.innerHTML = data.top_ips.map(r =>
+      `<div class="ip-row"><code>${r.ip}</code><span>${r.hits} hits</span></div>`
+    ).join('');
+  } else {
+    ipBox.innerHTML = '<p style="color:#94a3b8">No attack data yet. Run the generator.</p>';
+  }
+
+  // ── Confusion Matrix Bar Chart ──
+  const cm = data.confusion_matrix || [[0,0],[0,0]];
+  new Chart(document.getElementById('cmChart'), {
+    type:'bar',
+    data:{
+      labels:['True Negative','False Positive','False Negative','True Positive'],
+      datasets:[{
+        label:'Count',
+        data:[cm[0][0], cm[0][1], cm[1][0], cm[1][1]],
+        backgroundColor:['#22c55e','#ef4444','#f59e0b','#3b82f6']
+      }]
+    },
+    options:{ plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  });
+
+  // ── ROC Curve ──
+  const roc = data.roc || {};
+  if(roc.fpr && roc.tpr) {
+    new Chart(document.getElementById('rocChart'), {
+      type:'line',
+      data:{
+        labels: roc.fpr.map(v => v.toFixed(3)),
+        datasets:[{
+          label:'ROC Curve',
+          data: roc.tpr,
+          borderColor:'#3b82f6',
+          fill:false, tension:0.3, pointRadius:0
+        },{
+          label:'Random',
+          data: roc.fpr,
+          borderColor:'#94a3b8',
+          borderDash:[6,4], fill:false, pointRadius:0
+        }]
+      },
+      options:{
+        scales:{
+          x:{title:{display:true,text:'False Positive Rate'}},
+          y:{title:{display:true,text:'True Positive Rate'},min:0,max:1}
+        }
+      }
+    });
+  }
+
+  // ── PR Curve ──
+  const pr = data.pr || {};
+  if(pr.precision && pr.recall) {
+    new Chart(document.getElementById('prChart'), {
+      type:'line',
+      data:{
+        labels: pr.recall.map(v => v.toFixed(3)),
+        datasets:[{
+          label:'Precision-Recall Curve',
+          data: pr.precision,
+          borderColor:'#a855f7',
+          fill:false, tension:0.3, pointRadius:0
+        }]
+      },
+      options:{
+        scales:{
+          x:{title:{display:true,text:'Recall'}},
+          y:{title:{display:true,text:'Precision'},min:0,max:1}
+        }
+      }
+    });
+  }
+
+  // ── Feature Importance ──
+  const feats = data.top_features || [];
+  if(feats.length) {
+    new Chart(document.getElementById('featChart'), {
+      type:'bar',
+      data:{
+        labels: feats.map(f => f.feature),
+        datasets:[{
+          label:'Importance',
+          data: feats.map(f => f.importance),
+          backgroundColor:'#22d3ee'
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        plugins:{legend:{display:false}},
+        scales:{x:{beginAtZero:true}}
+      }
+    });
+  }
+}
+
+loadMetrics();
+setInterval(loadMetrics, 10000);  // refresh every 10s
+</script>
+{% endblock %}

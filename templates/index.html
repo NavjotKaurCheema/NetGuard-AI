@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <h1>NetGuard-AI<br><span class="highlight">Real-Time Network Intrusion Detection System</span></h1>
+    <p>Detect attacks live, visualize geolocation, explain why traffic is flagged — production-ready demo with ML + explainability.</p>
+    <!-- <div class="hero-stats">
+      <div class="stat"><span class="stat-num">1000</span><span>Flows Processed</span></div>
+      <div class="stat"><span class="stat-num">250</span><span>Attacks Detected</span></div>
+      <div class="stat"><span class="stat-num">99</span><span>% Accuracy (target)</span></div>
+      <div class="stat"><span class="stat-num">1</span><span>Realtime System</span></div>
+    </div> -->
+    <a href="{{ url_for('login') }}" class="btn-primary">Try Live Demo →</a>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="section-title">Key <span class="highlight">Features</span></h2>
+  <div class="grid-3">
+    <div class="card">
+      <i class="fa fa-brain card-icon"></i>
+      <h3>Hybrid ML Detection</h3>
+      <p>Combines XGBoost (supervised) for known attacks and Isolation Forest (unsupervised) for zero-day anomalies.</p>
+    </div>
+    <div class="card">
+      <i class="fa fa-map-location-dot card-icon"></i>
+      <h3>GeoIP Visualisation</h3>
+      <p>Each flow is geolocated and plotted live on a Leaflet world map — green for benign, red for attacks.</p>
+    </div>
+    <div class="card">
+      <i class="fa fa-lightbulb card-icon"></i>
+      <h3>Explainable AI (SHAP)</h3>
+      <p>SHAP values tell you exactly which network features caused an alert — transparency for analysts.</p>
+    </div>
+    <div class="card">
+      <i class="fa fa-chart-line card-icon"></i>
+      <h3>Live Dashboard</h3>
+      <p>Real-time alert feed, attack frequency chart, ROC curve, confusion matrix — all in one dashboard.</p>
+    </div>
+    <div class="card">
+      <i class="fa fa-sliders card-icon"></i>
+      <h3>Dynamic Tuning</h3>
+      <p>Adjust alpha, beta, and threshold sliders live without restarting the server.</p>
+    </div>
+    <div class="card">
+      <i class="fa fa-database card-icon"></i>
+      <h3>Persistent Logging</h3>
+      <p>All predictions are stored in SQLite for historical analysis and performance tracking.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="section section-dark" id="why">
+  <h2 class="section-title">Why <span class="highlight">Network Security?</span></h2>
+  <div class="grid-3">
+    <div class="card-dark">
+      <h3>🛡️ Preventing Breaches</h3>
+      <p>Malicious actors continuously probe networks for vulnerabilities, aiming to steal data, disrupt services, or gain unauthorized access.</p>
+    </div>
+    <div class="card-dark">
+      <h3>🔒 Data Protection</h3>
+      <p>Sensitive corporate and user data must be protected from exfiltration and unauthorized access during transit.</p>
+    </div>
+    <div class="card-dark">
+      <h3>✅ Ensuring Trust</h3>
+      <p>A secure network is fundamental to operational integrity. Attacks can erode customer trust and lead to significant financial damage.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="section" id="tools">
+  <h2 class="section-title">Tools &amp; <span class="highlight">Tech Stack</span></h2>
+  <div class="grid-4">
+    <div class="tool-card"><h3>Flask</h3><p>REST API & template server powering the demo.</p></div>
+    <div class="tool-card"><h3>Socket.IO</h3><p>Real-time communication between replay generator and dashboard.</p></div>
+    <div class="tool-card"><h3>Pandas</h3><p>Data preparation, aggregation, and CSV replay utilities.</p></div>
+    <div class="tool-card"><h3>scikit-learn</h3><p>Machine learning models (XGBoost, IsolationForest) used for detection.</p></div>
+    <div class="tool-card"><h3>SHAP</h3><p>Explainability — shows which features triggered an alert.</p></div>
+    <div class="tool-card"><h3>GeoLite2-City.mmdb</h3><p>GeoIP database used to map IP addresses to geographic locations, enabling visualization of attack origins in real time.</p></div>
+    <!-- <div class="tool-card"><h3>Chart.js</h3><p>Live charts: attacks/second, confusion matrix, ROC, PR curves.</p></div> -->
+    <div class="tool-card"><h3>SQLite</h3><p>Lightweight database for persistent prediction logging.</p></div>
+  </div>
+</section>
+
+<!-- TEAM
+<section class="section section-dark" id="team">
+  <h2 class="section-title">Meet the <span class="highlight">Team</span></h2>
+  <div class="grid-3">
+    <div class="card-dark">
+      <div class="avatar">🎓</div>
+      <h3>Lead ML Engineer</h3>
+      <p>Model training, feature engineering and explainability pipelines.</p>
+    </div>
+    <div class="card-dark">
+      <div class="avatar">💻</div>
+      <h3>Fullstack Developer</h3>
+      <p>UI, Socket.IO integration, and map visualisations.</p>
+    </div>
+    <div class="card-dark">
+      <div class="avatar">⚙️</div>
+      <h3>DevOps &amp; Data</h3>
+      <p>DB, replay generator, and deployment automation.</p>
+    </div>
+  </div>
+</section> -->
+
+{% endblock %}

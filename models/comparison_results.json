@@ -1,0 +1,340 @@
+[
+  {
+    "model": "XGBoost",
+    "accuracy": 99.905,
+    "precision": 0.9946,
+    "recall": 0.9998,
+    "f1": 0.9972,
+    "far": 0.0011,
+    "auc_roc": 1.0,
+    "train_time_s": 24.3,
+    "infer_ms": 0.00065,
+    "confusion_matrix": [
+      [
+        418837,
+        460
+      ],
+      [
+        19,
+        85157
+      ]
+    ],
+    "tp": 85157,
+    "fp": 460,
+    "tn": 418837,
+    "fn": 19,
+    "composite_score": 0.9948
+  },
+  {
+    "model": "Decision Tree",
+    "accuracy": 99.8997,
+    "precision": 0.9959,
+    "recall": 0.9981,
+    "f1": 0.997,
+    "far": 0.0008,
+    "auc_roc": 0.9994,
+    "train_time_s": 32.9,
+    "infer_ms": 0.00011,
+    "confusion_matrix": [
+      [
+        418949,
+        348
+      ],
+      [
+        158,
+        85018
+      ]
+    ],
+    "tp": 85018,
+    "fp": 348,
+    "tn": 418949,
+    "fn": 158,
+    "composite_score": 0.9867
+  },
+  {
+    "model": "LightGBM",
+    "accuracy": 99.9056,
+    "precision": 0.9947,
+    "recall": 0.9998,
+    "f1": 0.9972,
+    "far": 0.0011,
+    "auc_roc": 1.0,
+    "train_time_s": 14.6,
+    "infer_ms": 0.00226,
+    "confusion_matrix": [
+      [
+        418840,
+        457
+      ],
+      [
+        19,
+        85157
+      ]
+    ],
+    "tp": 85157,
+    "fp": 457,
+    "tn": 418840,
+    "fn": 19,
+    "composite_score": 0.9845
+  },
+  {
+    "model": "Random Forest",
+    "accuracy": 99.9005,
+    "precision": 0.9962,
+    "recall": 0.9979,
+    "f1": 0.9971,
+    "far": 0.0008,
+    "auc_roc": 1.0,
+    "train_time_s": 100.9,
+    "infer_ms": 0.00121,
+    "confusion_matrix": [
+      [
+        418976,
+        321
+      ],
+      [
+        181,
+        84995
+      ]
+    ],
+    "tp": 84995,
+    "fp": 321,
+    "tn": 418976,
+    "fn": 181,
+    "composite_score": 0.9833
+  },
+  {
+    "model": "Gradient Boosting",
+    "accuracy": 99.8993,
+    "precision": 0.9966,
+    "recall": 0.9974,
+    "f1": 0.997,
+    "far": 0.0007,
+    "auc_roc": 1.0,
+    "train_time_s": 5603.9,
+    "infer_ms": 0.00667,
+    "confusion_matrix": [
+      [
+        419010,
+        287
+      ],
+      [
+        221,
+        84955
+      ]
+    ],
+    "tp": 84955,
+    "fp": 287,
+    "tn": 419010,
+    "fn": 221,
+    "composite_score": 0.9462
+  },
+  {
+    "model": "Extra Trees",
+    "accuracy": 99.8137,
+    "precision": 0.9954,
+    "recall": 0.9936,
+    "f1": 0.9945,
+    "far": 0.0009,
+    "auc_roc": 0.9988,
+    "train_time_s": 99.8,
+    "infer_ms": 0.00514,
+    "confusion_matrix": [
+      [
+        418903,
+        394
+      ],
+      [
+        546,
+        84630
+      ]
+    ],
+    "tp": 84630,
+    "fp": 394,
+    "tn": 418903,
+    "fn": 546,
+    "composite_score": 0.9258
+  },
+  {
+    "model": "MLP (GPU)",
+    "accuracy": 99.4699,
+    "precision": 0.9729,
+    "recall": 0.9964,
+    "f1": 0.9845,
+    "far": 0.0056,
+    "auc_roc": 0.9999,
+    "train_time_s": 1395.5,
+    "infer_ms": 0.00407,
+    "confusion_matrix": [
+      [
+        416932,
+        2365
+      ],
+      [
+        309,
+        84867
+      ]
+    ],
+    "tp": 84867,
+    "fp": 2365,
+    "tn": 416932,
+    "fn": 309,
+    "composite_score": 0.9254
+  },
+  {
+    "model": "GRU (GPU)",
+    "accuracy": 99.4678,
+    "precision": 0.9741,
+    "recall": 0.995,
+    "f1": 0.9844,
+    "far": 0.0054,
+    "auc_roc": 0.9998,
+    "train_time_s": 1395.0,
+    "infer_ms": 0.00514,
+    "confusion_matrix": [
+      [
+        417040,
+        2257
+      ],
+      [
+        428,
+        84748
+      ]
+    ],
+    "tp": 84748,
+    "fp": 2257,
+    "tn": 417040,
+    "fn": 428,
+    "composite_score": 0.9119
+  },
+  {
+    "model": "CNN+BiLSTM (GPU)",
+    "accuracy": 99.4943,
+    "precision": 0.975,
+    "recall": 0.9956,
+    "f1": 0.9852,
+    "far": 0.0052,
+    "auc_roc": 0.9999,
+    "train_time_s": 1705.4,
+    "infer_ms": 0.0087,
+    "confusion_matrix": [
+      [
+        417119,
+        2178
+      ],
+      [
+        373,
+        84803
+      ]
+    ],
+    "tp": 84803,
+    "fp": 2178,
+    "tn": 417119,
+    "fn": 373,
+    "composite_score": 0.8943
+  },
+  {
+    "model": "BiLSTM (GPU)",
+    "accuracy": 99.5342,
+    "precision": 0.9801,
+    "recall": 0.9926,
+    "f1": 0.9863,
+    "far": 0.0041,
+    "auc_roc": 0.9998,
+    "train_time_s": 1587.5,
+    "infer_ms": 0.00837,
+    "confusion_matrix": [
+      [
+        417576,
+        1721
+      ],
+      [
+        629,
+        84547
+      ]
+    ],
+    "tp": 84547,
+    "fp": 1721,
+    "tn": 417576,
+    "fn": 629,
+    "composite_score": 0.8867
+  },
+  {
+    "model": "LSTM (GPU)",
+    "accuracy": 99.5221,
+    "precision": 0.9779,
+    "recall": 0.9942,
+    "f1": 0.986,
+    "far": 0.0046,
+    "auc_roc": 0.9999,
+    "train_time_s": 4276.8,
+    "infer_ms": 0.01308,
+    "confusion_matrix": [
+      [
+        417380,
+        1917
+      ],
+      [
+        494,
+        84682
+      ]
+    ],
+    "tp": 84682,
+    "fp": 1917,
+    "tn": 417380,
+    "fn": 494,
+    "composite_score": 0.8628
+  },
+  {
+    "model": "1D-CNN (GPU)",
+    "accuracy": 99.4404,
+    "precision": 0.9723,
+    "recall": 0.9952,
+    "f1": 0.9836,
+    "far": 0.0058,
+    "auc_roc": 0.9998,
+    "train_time_s": 2453.3,
+    "infer_ms": 0.01566,
+    "confusion_matrix": [
+      [
+        416882,
+        2415
+      ],
+      [
+        408,
+        84768
+      ]
+    ],
+    "tp": 84768,
+    "fp": 2415,
+    "tn": 416882,
+    "fn": 408,
+    "composite_score": 0.8432
+  },
+  {
+    "model": "Logistic Regression",
+    "accuracy": 93.1507,
+    "precision": 0.7332,
+    "recall": 0.9343,
+    "f1": 0.8216,
+    "far": 0.0691,
+    "auc_roc": 0.9792,
+    "train_time_s": 7.7,
+    "infer_ms": 2e-05,
+    "confusion_matrix": [
+      [
+        390340,
+        28957
+      ],
+      [
+        5596,
+        79580
+      ]
+    ],
+    "tp": 79580,
+    "fp": 28957,
+    "tn": 390340,
+    "fn": 5596,
+    "composite_score": 0.1
+  }
+]
